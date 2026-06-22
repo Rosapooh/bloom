@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bloom — Digital Bouquet Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cream:#FEF6EE;--blush:#F5D0D9;--rose:#C4607A;--deep:#6D2039;--sage:#5A7B5A;--petal:#FDEEF3;--text:#3A1520;--muted:#8A5766;--white:#FFFAF7;--cb:rgba(196,96,122,0.18)}
+body{font-family:'Lato',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cg opacity='0.065'%3E%3Cellipse cx='32' cy='32' rx='9' ry='15' fill='%23C4607A' transform='rotate(-30 32 32)'/%3E%3Cellipse cx='32' cy='32' rx='9' ry='15' fill='%23C4607A' transform='rotate(30 32 32)'/%3E%3Cellipse cx='32' cy='32' rx='9' ry='15' fill='%23C4607A' transform='rotate(90 32 32)'/%3E%3Ccircle cx='32' cy='32' r='6' fill='%23E8A040'/%3E%3Cellipse cx='140' cy='90' rx='7' ry='12' fill='%235A7B5A' transform='rotate(20 140 90)'/%3E%3Cellipse cx='140' cy='90' rx='7' ry='12' fill='%235A7B5A' transform='rotate(80 140 90)'/%3E%3Ccircle cx='140' cy='90' r='4' fill='%23C4607A'/%3E%3Cellipse cx='75' cy='170' rx='8' ry='14' fill='%23A060B0' transform='rotate(-60 75 170)'/%3E%3Cellipse cx='75' cy='170' rx='8' ry='14' fill='%23A060B0' transform='rotate(0 75 170)'/%3E%3Ccircle cx='75' cy='170' r='5' fill='%23F5D0D9'/%3E%3Cellipse cx='185' cy='170' rx='6' ry='11' fill='%23C4607A' transform='rotate(45 185 170)'/%3E%3Ccircle cx='185' cy='170' r='3' fill='%23E8A040'/%3E%3C/g%3E%3C/svg%3E");pointer-events:none;z-index:0}
+body>*{position:relative;z-index:1}
+.container{max-width:940px;margin:0 auto;padding:0 20px}
+header{text-align:center;padding:54px 20px 38px;background:linear-gradient(180deg,rgba(245,208,217,.55) 0%,transparent 100%);border-bottom:1px solid var(--blush);overflow:hidden}
+.eyebrow{font-weight:300;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--rose);margin-bottom:10px}
+h1{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.4rem);font-weight:600;color:var(--deep);line-height:1.15;margin-bottom:12px}
+h1 em{font-style:italic;color:var(--rose)}
+.subtitle{font-size:15px;color:var(--muted);font-weight:300;max-width:480px;margin:0 auto;line-height:1.7}
+.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:28px 0 16px}
+.search-wrap{position:relative;flex:1;min-width:200px}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);opacity:.45}
+.search-input{width:100%;padding:10px 14px 10px 36px;border:1px solid var(--cb);border-radius:50px;background:var(--white);font-family:'Lato',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s}
+.search-input:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(196,96,122,.12)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{padding:8px 18px;border-radius:50px;border:1px solid var(--cb);background:var(--white);font-family:'Lato',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:all .18s}
+.tab:hover{border-color:var(--rose);color:var(--rose)}
+.tab.active{background:var(--rose);color:#fff;border-color:var(--rose)}
+.progress-wrap{margin-bottom:18px}
+.progress-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+.progress-label{font-size:13px;color:var(--muted)}
+.progress-count{font-family:'Playfair Display',serif;font-size:17px;color:var(--deep)}
+.progress-count span{color:var(--rose)}
+.progress-track{height:6px;background:var(--blush);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--rose),#A040C0);border-radius:99px;transition:width .35s cubic-bezier(.34,1.56,.64,1);width:0}
+.flower-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;margin-bottom:36px;max-height:430px;overflow-y:auto;padding-right:4px;padding-bottom:4px}
+.flower-grid::-webkit-scrollbar{width:4px}
+.flower-grid::-webkit-scrollbar-thumb{background:var(--blush);border-radius:99px}
+.flower-card{background:var(--white);border:1px solid var(--cb);border-radius:16px;padding:10px 8px 8px;text-align:center;cursor:pointer;transition:transform .18s,border-color .18s,box-shadow .18s;user-select:none;position:relative;overflow:visible}
+.flower-card:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(196,96,122,.15);border-color:rgba(196,96,122,.45)}
+.flower-card.selected{border:2px solid var(--rose);background:var(--petal)}
+.flower-card.disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.flower-card.selected.disabled{opacity:1;pointer-events:auto}
+.flower-svg-wrap{display:flex;align-items:center;justify-content:center;height:90px;overflow:visible}
+.flower-name{font-size:11.5px;font-weight:500;color:var(--text);line-height:1.3;margin-bottom:4px;margin-top:2px}
+.cat-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:99px;letter-spacing:.03em}
+.cat-annual{background:#FFF0DC;color:#7A4A10}
+.cat-perennial{background:#E4F1E4;color:#2F5C2F}
+.cat-biennial{background:#E8EEF8;color:#2C4480}
+.count-badge{position:absolute;top:7px;right:7px;background:var(--rose);color:#fff;font-size:11px;font-weight:500;border-radius:99px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(196,96,122,.35)}
+.empty-grid{grid-column:1/-1;text-align:center;padding:2rem 0;color:var(--muted);font-size:14px}
+@keyframes floatFlower{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-5px) rotate(1.5deg)}}
+.f-anim{animation:floatFlower var(--dur,4s) ease-in-out infinite var(--del,0s);transform-origin:0px 0px}
+.flower-card:hover .f-anim{animation-duration:.8s}
+.divider{display:flex;align-items:center;gap:16px;margin:8px 0 28px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--blush)}
+.divider span{font-family:'Playfair Display',serif;font-size:13px;color:var(--muted);white-space:nowrap}
+.bouquet-section{background:linear-gradient(155deg,#FFF7F9 0%,#F6F0FF 100%);border:1px solid var(--blush);border-radius:24px;padding:36px 24px 28px;margin-bottom:48px;text-align:center}
+.bouquet-section h2{font-family:'Playfair Display',serif;font-size:1.6rem;font-weight:400;color:var(--deep);margin-bottom:6px}
+.bouquet-section h2 em{font-style:italic;color:var(--rose)}
+.bouquet-desc{font-size:13px;color:var(--muted);margin-bottom:20px;font-weight:300;min-height:20px}
+#bouquetSvg{display:block;margin:0 auto;max-width:100%}
+.stem-list{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:16px;min-height:28px}
+.stem-tag{display:inline-flex;align-items:center;gap:5px;background:var(--white);border:1px solid var(--cb);border-radius:99px;padding:4px 12px;font-size:12px;color:var(--muted)}
+.bouquet-controls{margin-top:22px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;align-items:center}
+.bouquet-name-input{padding:10px 18px;border:1px solid var(--cb);border-radius:50px;background:var(--white);font-family:'Playfair Display',serif;font-style:italic;font-size:15px;color:var(--deep);outline:none;width:240px;text-align:center;transition:border-color .2s}
+.bouquet-name-input:focus{border-color:var(--rose)}
+.btn{padding:10px 22px;border-radius:50px;border:1px solid var(--cb);background:var(--white);font-family:'Lato',sans-serif;font-size:13px;color:var(--muted);cursor:pointer;transition:all .18s}
+.btn:hover{border-color:var(--rose);color:var(--rose)}
+.btn-rose{background:var(--rose);color:#fff;border-color:var(--rose);font-weight:500}
+.btn-rose:hover{background:var(--deep);border-color:var(--deep);color:#fff}
+footer{text-align:center;padding:28px 20px;font-size:12px;color:var(--muted);border-top:1px solid var(--blush);letter-spacing:.04em;font-weight:300}
+footer span{color:var(--rose)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--deep);color:#fff;font-size:14px;padding:12px 24px;border-radius:50px;opacity:0;transition:transform .3s,opacity .3s;z-index:999;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">✦ Artisan Bouquet Builder ✦</p>
+  <h1>Create your perfect <em>bloom</em></h1>
+  <p class="subtitle">Choose up to 20 stems from 45 real flower varieties — annuals, perennials & biennials — and watch your bouquet blossom.</p>
+</header>
+<main class="container">
+  <div class="controls">
+    <div class="search-wrap">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="search-input" id="searchInput" placeholder="Search flowers…" oninput="renderGrid()"/>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('all',this)">All</button>
+      <button class="tab" onclick="setTab('annual',this)">Annuals</button>
+      <button class="tab" onclick="setTab('perennial',this)">Perennials</button>
+      <button class="tab" onclick="setTab('biennial',this)">Biennials</button>
+      <button class="tab" onclick="setTab('selected',this)">My picks</button>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-header">
+      <span class="progress-label">Stems added</span>
+      <span class="progress-count"><span id="stemNum">0</span> / 20</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+  <div class="flower-grid" id="flowerGrid"></div>
+  <div class="divider"><span>✦ Your Bouquet ✦</span></div>
+  <div class="bouquet-section">
+    <h2>Your digital <em>bouquet</em></h2>
+    <p class="bouquet-desc" id="bouquetDesc">Add flowers above to start building your bouquet.</p>
+    <svg id="bouquetSvg" viewBox="0 0 720 560" width="720" height="560" xmlns="http://www.w3.org/2000/svg" style="max-width:100%"></svg>
+    <div class="stem-list" id="stemList"></div>
+    <div class="bouquet-controls">
+      <input class="bouquet-name-input" id="bouquetName" placeholder="Name your bouquet…" maxlength="50"/>
+      <button class="btn" onclick="shuffleBouquet()">Shuffle</button>
+      <button class="btn" onclick="clearAll()">Clear all</button>
+      <button class="btn btn-rose" id="copyBtn" onclick="copyBouquet()">Copy bouquet ✦</button>
+    </div>
+  </div>
+</main>
+<footer>Made with <span>♥</span> · Bloom Bouquet Builder · Flower data from The Bouqs Co.</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Color helpers ──
+function hR(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function rH(r,g,b){return'#'+[r,g,b].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('')}
+function li(h,a){const[r,g,b]=hR(h);return rH(r+(255-r)*a,g+(255-g)*a,b+(255-b)*a)}
+function dk(h,a){const[r,g,b]=hR(h);return rH(r*(1-a),g*(1-a),b*(1-a))}
+
+// ── Flower data ──
+const FLOWERS=[
+  {name:"Rose",cat:"perennial",color:"#E05070",center:"#8B1A2F"},
+  {name:"Tulip",cat:"perennial",color:"#F0709A",center:"#B03060"},
+  {name:"Peony",cat:"perennial",color:"#F7A8C4",center:"#D4607A"},
+  {name:"Lavender",cat:"perennial",color:"#9B87C0",center:"#5A4080"},
+  {name:"Lily",cat:"perennial",color:"#FFF8B0",center:"#C8A000"},
+  {name:"Hydrangea",cat:"perennial",color:"#80B4E8",center:"#3060A8"},
+  {name:"Orchid",cat:"perennial",color:"#C860D8",center:"#7A20A0"},
+  {name:"Iris",cat:"perennial",color:"#7060C8",center:"#B8A0F0"},
+  {name:"Coneflower",cat:"perennial",color:"#D060B0",center:"#702060"},
+  {name:"Black-eyed Susan",cat:"perennial",color:"#F0B020",center:"#3A2010"},
+  {name:"Daylily",cat:"perennial",color:"#F08040",center:"#A04010"},
+  {name:"Freesia",cat:"perennial",color:"#F8E060",center:"#C89020"},
+  {name:"Calla lily",cat:"perennial",color:"#F8F4E8",center:"#E0C060"},
+  {name:"Aster",cat:"perennial",color:"#A870E0",center:"#F8D040"},
+  {name:"Phlox",cat:"perennial",color:"#F080A0",center:"#B03050"},
+  {name:"Bee balm",cat:"perennial",color:"#E84040",center:"#800010"},
+  {name:"Yarrow",cat:"perennial",color:"#F8E8A0",center:"#D0B020"},
+  {name:"Salvia",cat:"perennial",color:"#6080D0",center:"#2030A0"},
+  {name:"Sunflower",cat:"annual",color:"#F8CC20",center:"#5A3010"},
+  {name:"Cosmos",cat:"annual",color:"#F890B8",center:"#F8D040"},
+  {name:"Dahlia",cat:"annual",color:"#C050A8",center:"#701070"},
+  {name:"Zinnia",cat:"annual",color:"#F86030",center:"#F8D040"},
+  {name:"Ranunculus",cat:"annual",color:"#F8A0B0",center:"#E06080"},
+  {name:"Cornflower",cat:"annual",color:"#4870D8",center:"#1830A0"},
+  {name:"Chrysanthemum",cat:"annual",color:"#F8E040",center:"#C09000"},
+  {name:"Celosia",cat:"annual",color:"#E84080",center:"#900030"},
+  {name:"Gladiolus",cat:"annual",color:"#E870A0",center:"#A02860"},
+  {name:"Gerbera daisy",cat:"annual",color:"#F86820",center:"#3A1808"},
+  {name:"Snapdragon",cat:"annual",color:"#E09030",center:"#805010"},
+  {name:"Larkspur",cat:"annual",color:"#7068D0",center:"#402880"},
+  {name:"Marigold",cat:"annual",color:"#F89020",center:"#A04808"},
+  {name:"Petunia",cat:"annual",color:"#B050C8",center:"#601880"},
+  {name:"Anemone",cat:"annual",color:"#F060A0",center:"#101010"},
+  {name:"Craspedia",cat:"annual",color:"#F8D820",center:"#C09010"},
+  {name:"Amaranth",cat:"annual",color:"#C02060",center:"#700030"},
+  {name:"Gomphrena",cat:"annual",color:"#D060C0",center:"#901880"},
+  {name:"Bells of Ireland",cat:"annual",color:"#58A858",center:"#F8F4C0"},
+  {name:"Bluebonnet",cat:"annual",color:"#3060C8",center:"#F8F8F8"},
+  {name:"Foxglove",cat:"biennial",color:"#C870D8",center:"#701890"},
+  {name:"Hollyhock",cat:"biennial",color:"#E06090",center:"#A01840"},
+  {name:"Sweet William",cat:"biennial",color:"#E05898",center:"#701038"},
+  {name:"Forget-me-not",cat:"biennial",color:"#60A8F0",center:"#F8E040"},
+  {name:"Canterbury bells",cat:"biennial",color:"#8068D0",center:"#401888"},
+  {name:"Wallflower",cat:"biennial",color:"#E88040",center:"#804010"},
+  {name:"Evening primrose",cat:"biennial",color:"#F8F040",center:"#F08020"}
+];
+
+const FTYPE={
+  "Rose":"rose","Tulip":"tulip","Peony":"peony","Lavender":"lavender",
+  "Lily":"lily","Hydrangea":"hydrangea","Orchid":"orchid","Iris":"iris",
+  "Coneflower":"daisy","Black-eyed Susan":"blackeyedsusan","Daylily":"lily",
+  "Freesia":"lily","Calla lily":"calla","Aster":"daisy","Phlox":"cosmos",
+  "Bee balm":"beeball","Yarrow":"daisy","Salvia":"spike","Sunflower":"sunflower",
+  "Cosmos":"cosmos","Dahlia":"dahlia","Zinnia":"zinnia","Ranunculus":"ranunculus",
+  "Cornflower":"cornflower","Chrysanthemum":"chrysanthemum","Celosia":"celosia",
+  "Gladiolus":"gladiolus","Gerbera daisy":"daisy","Snapdragon":"snapdragon",
+  "Larkspur":"spike","Marigold":"marigold","Petunia":"petunia",
+  "Anemone":"anemone","Craspedia":"craspedia","Amaranth":"craspedia",
+  "Gomphrena":"craspedia","Bells of Ireland":"bells","Bluebonnet":"cosmos",
+  "Foxglove":"foxglove","Hollyhock":"cosmos","Sweet William":"cosmos",
+  "Forget-me-not":"forgetmenot","Canterbury bells":"foxglove",
+  "Wallflower":"cosmos","Evening primrose":"cosmos"
+};
+
+// ── SVG draw functions (centered at 0,0, radius ~30px) ──
+const D={
+  rose(c,d,id){
+    const cl=li(c,.55),cm=li(c,.25),cd=dk(c,.3),dl=li(d,.4);
+    let s=`<defs>
+      <radialGradient id="gP${id}" cx="0" cy="0" r="33" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="45%" stop-color="${cm}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+      <radialGradient id="gC${id}" cx="0" cy="0" r="12" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${dl}"/><stop offset="100%" stop-color="${dk(d,.2)}"/>
+      </radialGradient>
+    </defs>`;
+    // outer ring
+    for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;const px=Math.cos(a)*17,py=Math.sin(a)*17;const deg=(a*180/Math.PI).toFixed(0);s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="9.5" ry="16" fill="url(#gP${id})" stroke="${cd}" stroke-width=".5" opacity=".9" transform="rotate(${deg},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    // mid ring
+    for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2+Math.PI/5;const px=Math.cos(a)*10.5,py=Math.sin(a)*10.5;const deg=(a*180/Math.PI).toFixed(0);s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="8" ry="13" fill="url(#gP${id})" stroke="${cd}" stroke-width=".4" transform="rotate(${deg},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    // inner petals
+    for(let i=0;i<4;i++){const a=(i/4)*Math.PI*2;const px=Math.cos(a)*5,py=Math.sin(a)*5;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="5" ry="9" fill="${cm}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="4" fill="url(#gC${id})"/>`;
+    return s;
+  },
+  tulip(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.3),cm=li(c,.2);
+    return `<defs>
+      <linearGradient id="gT${id}" x1="-1" y1="-1" x2="1" y2="1" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="-12" cy="-2" rx="7.5" ry="17" fill="${cm}" opacity=".78" stroke="${cd}" stroke-width=".5" transform="rotate(-34,-12,-2)"/>
+    <ellipse cx="12" cy="-2" rx="7.5" ry="17" fill="${cm}" opacity=".78" stroke="${cd}" stroke-width=".5" transform="rotate(34,12,-2)"/>
+    <path d="M0,-30 C11,-20 14,-6 12,6 C10,15 6,22 0,24 C-6,22 -10,15 -12,6 C-14,-6 -11,-20 0,-30Z" fill="url(#gT${id})" stroke="${cd}" stroke-width=".5"/>
+    <path d="M-1,-28 C1,-20 2,-10 1,4 C0,14 0,20 0,24 C-2,20 -3,12 -4,3 C-5,-8 -3,-20 -1,-28Z" fill="${cl}" opacity=".35"/>
+    <line x1="-3" y1="-24" x2="-3" y2="10" stroke="${dk(c,.15)}" stroke-width=".8" opacity=".3"/>`;
+  },
+  sunflower(c,d,id){
+    const cl=li(c,.4),cd=dk(c,.25),dc=li(d,.3);
+    let s=`<defs>
+      <linearGradient id="gS${id}" x1="0" y1="-1" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(22)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${dk(c,.15)}"/>
+      </linearGradient>
+      <radialGradient id="gSD${id}" cx="0" cy="0" r="13" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${dc}"/><stop offset="100%" stop-color="${dk(d,.35)}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<16;i++){const a=(i/16)*Math.PI*2;const px=Math.cos(a)*21,py=Math.sin(a)*21;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="4" ry="12" fill="url(#gS${id})" stroke="${cd}" stroke-width=".4" transform="rotate(${(i*22.5).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    for(let i=0;i<8;i++){const a=((i+.5)/8)*Math.PI*2;const px=Math.cos(a)*17,py=Math.sin(a)*17;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="3" ry="9" fill="${c}" opacity=".55" transform="rotate(${((i+.5)*45).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="12" fill="url(#gSD${id})" stroke="${dk(d,.4)}" stroke-width=".8"/>`;
+    [[0,0],[4,0],[-4,0],[0,4],[0,-4],[3,3],[-3,3],[3,-3],[-3,-3],[6,1],[-6,1],[1,6],[-1,6],[6,-1],[-6,-1],[1,-6],[-1,-6],[8,4],[-8,4],[4,8],[-4,8],[8,-4],[-8,-4],[4,-8],[-4,-8],[10,0],[-10,0],[0,10],[0,-10]].forEach(([x,y])=>{if(x*x+y*y<=144)s+=`<circle cx="${x}" cy="${y}" r="1.4" fill="${dk(d,.5)}" opacity=".85"/>`;});
+    s+=`<circle r="3" fill="${dk(d,.6)}"/>`;
+    return s;
+  },
+  peony(c,d,id){
+    const cl=li(c,.55),cm=li(c,.25),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gPe${id}" cx="0" cy="0" r="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="55%" stop-color="${c}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[6,30,10.5,18,.6,0],[7,23,9.5,15,.7,25.7],[7,16,8.5,12.5,.8,0],[6,10,7.5,11,.88,30],[5,5,6,9,.95,0]].forEach(([n,r,rx,ry,op,off],ri)=>{
+      const o=off*Math.PI/180;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${rx}" ry="${ry}" fill="url(#gPe${id})" stroke="${cd}" stroke-width=".4" opacity="${op}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    });
+    s+=`<circle r="4.5" fill="${li(d,.3)}"/>`;
+    return s;
+  },
+  orchid(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25),dl=li(d,.5);
+    return `<defs>
+      <radialGradient id="gOr${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="0" cy="-21" rx="8.5" ry="14" fill="url(#gOr${id})" stroke="${cd}" stroke-width=".5"/>
+    <ellipse cx="18" cy="-7" rx="8.5" ry="14" fill="url(#gOr${id})" stroke="${cd}" stroke-width=".5" transform="rotate(-62,18,-7)"/>
+    <ellipse cx="-18" cy="-7" rx="8.5" ry="14" fill="url(#gOr${id})" stroke="${cd}" stroke-width=".5" transform="rotate(62,-18,-7)"/>
+    <ellipse cx="13" cy="13" rx="7.5" ry="12" fill="url(#gOr${id})" stroke="${cd}" stroke-width=".4" opacity=".85" transform="rotate(-128,13,13)"/>
+    <ellipse cx="-13" cy="13" rx="7.5" ry="12" fill="url(#gOr${id})" stroke="${cd}" stroke-width=".4" opacity=".85" transform="rotate(128,-13,13)"/>
+    <path d="M-8,2 C-10,8 -8,16 0,20 C8,16 10,8 8,2 C5,-2 -5,-2 -8,2Z" fill="${d}" opacity=".9"/>
+    <path d="M-5,4 C-4,8 -2,14 0,18 C2,14 4,8 5,4 C3,2 -3,2 -5,4Z" fill="${dl}" opacity=".6"/>
+    <circle cy="1" r="4.5" fill="${dl}" stroke="${d}" stroke-width="1"/>
+    <circle cy="1" r="2" fill="${d}"/>`;
+  },
+  lily(c,d,id){
+    const cl=li(c,.6),cd=dk(c,.2);
+    let s=`<defs>
+      <linearGradient id="gLi${id}" x1="-1" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="scale(10)">
+        <stop offset="0%" stop-color="${cd}"/><stop offset="50%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </linearGradient>
+    </defs>`;
+    for(let i=0;i<6;i++){
+      const a=(i/6)*Math.PI*2-Math.PI/2;
+      const px=Math.cos(a)*21,py=Math.sin(a)*21;
+      const lx=Math.cos(a+Math.PI/2)*5.5,ly=Math.sin(a+Math.PI/2)*5.5;
+      s+=`<path d="M${(Math.cos(a)*3.5).toFixed(1)},${(Math.sin(a)*3.5).toFixed(1)} Q${(px+lx).toFixed(1)},${(py+ly).toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)} Q${(px-lx).toFixed(1)},${(py-ly).toFixed(1)} ${(Math.cos(a)*3.5).toFixed(1)},${(Math.sin(a)*3.5).toFixed(1)}Z" fill="url(#gLi${id})" stroke="${cd}" stroke-width=".6"/>`;
+      // stamen
+      s+=`<line x1="${(Math.cos(a)*5).toFixed(1)}" y1="${(Math.sin(a)*5).toFixed(1)}" x2="${(Math.cos(a)*18).toFixed(1)}" y2="${(Math.sin(a)*18).toFixed(1)}" stroke="${d}" stroke-width="1.2" opacity=".8"/>`;
+      s+=`<ellipse cx="${(Math.cos(a)*19).toFixed(1)}" cy="${(Math.sin(a)*19).toFixed(1)}" rx="2.2" ry="1.5" fill="${d}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${(Math.cos(a)*19).toFixed(1)},${(Math.sin(a)*19).toFixed(1)})"/>`;
+    }
+    s+=`<circle r="5.5" fill="${li(d,.4)}" stroke="${d}" stroke-width="1"/>`;
+    s+=`<circle r="2.5" fill="${d}"/>`;
+    return s;
+  },
+  lavender(c,d,id){
+    const cl=li(c,.45),cd=dk(c,.2),sg=li(d,.3);
+    let s=`<defs>
+      <linearGradient id="gLv${id}" x1="0" y1="-1" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(30)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </linearGradient>
+    </defs>
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="${sg}" stroke-width="2.5" stroke-linecap="round"/>`;
+    for(let i=0;i<12;i++){const y=-26+i*4.5;const side=i%2===0?-8:8;s+=`<path d="M${(side*.3).toFixed(0)},${y} C${side*.8},${y-3} ${side},${y-1} ${side},${y+2} C${side},${y+4} ${(side*.8).toFixed(0)},${y+5} ${(side*.3).toFixed(0)},${y+4} Z" fill="url(#gLv${id})"/>`;}
+    s+=`<ellipse cx="-10" cy="14" rx="11" ry="5.5" fill="${sg}" opacity=".5" transform="rotate(-32,-10,14)"/>`;
+    s+=`<ellipse cx="10" cy="14" rx="11" ry="5.5" fill="${sg}" opacity=".5" transform="rotate(32,10,14)"/>`;
+    return s;
+  },
+  iris(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25),dl=li(d,.4);
+    return `<defs>
+      <radialGradient id="gIr${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+      <radialGradient id="gIS${id}" cx="0" cy="0" r="22" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${dl}"/><stop offset="100%" stop-color="${dk(d,.2)}"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="0" cy="20" rx="13" ry="19" fill="url(#gIr${id})" stroke="${cd}" stroke-width=".6"/>
+    <ellipse cx="17" cy="10" rx="13" ry="19" fill="url(#gIr${id})" stroke="${cd}" stroke-width=".6" transform="rotate(120,17,10)"/>
+    <ellipse cx="-17" cy="10" rx="13" ry="19" fill="url(#gIr${id})" stroke="${cd}" stroke-width=".6" transform="rotate(-120,-17,10)"/>
+    <ellipse cx="0" cy="-21" rx="10" ry="16" fill="url(#gIS${id})" stroke="${dk(d,.15)}" stroke-width=".5"/>
+    <ellipse cx="14" cy="-11" rx="10" ry="16" fill="url(#gIS${id})" stroke="${dk(d,.15)}" stroke-width=".5" transform="rotate(120,14,-11)"/>
+    <ellipse cx="-14" cy="-11" rx="10" ry="16" fill="url(#gIS${id})" stroke="${dk(d,.15)}" stroke-width=".5" transform="rotate(-120,-14,-11)"/>
+    <ellipse cx="0" cy="18" rx="3.5" ry="7" fill="#FFF8E0" opacity=".75"/>
+    <ellipse cx="15" cy="9" rx="3.5" ry="7" fill="#FFF8E0" opacity=".75" transform="rotate(120,15,9)"/>
+    <ellipse cx="-15" cy="9" rx="3.5" ry="7" fill="#FFF8E0" opacity=".75" transform="rotate(-120,-15,9)"/>`;
+  },
+  hydrangea(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.2);
+    let s=`<defs>
+      <radialGradient id="gHy${id}" cx="0" cy="0" r="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[0,-16],[11,-9],[-11,-9],[0,4],[11,12],[-11,12],[0,22],[18,1],[-18,1],[10,-20],[-10,-20]].forEach(([px,py])=>{
+      for(let i=0;i<4;i++){const a=(i/4)*Math.PI*2+Math.PI/4;const ex=px+Math.cos(a)*6.5,ey=py+Math.sin(a)*6.5;s+=`<ellipse cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" rx="5" ry="6.5" fill="url(#gHy${id})" stroke="${cd}" stroke-width=".35" transform="rotate(${(a*180/Math.PI).toFixed(0)},${ex.toFixed(1)},${ey.toFixed(1)})"/>`;}
+      s+=`<circle cx="${px}" cy="${py}" r="2.8" fill="${li(d,.3)}" stroke="${d}" stroke-width=".6"/>`;
+    });
+    return s;
+  },
+  dahlia(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.28);
+    let s=`<defs>
+      <radialGradient id="gDa${id}" cx="0" cy="0" r="30" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${li(c,.35)}"/><stop offset="60%" stop-color="${c}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[5,28,5.5,14,.62,0],[8,22,5,11,.72,22.5],[10,15,4.5,8.5,.81,11.25],[10,9,4,7,.89,0],[8,4,3.5,5.5,.95,22.5]].forEach(([n,r,rx,ry,op,off])=>{
+      const o=off*Math.PI/180;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${rx}" ry="${ry}" fill="url(#gDa${id})" stroke="${cd}" stroke-width=".35" opacity="${op}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    });
+    s+=`<circle r="3.5" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  daisy(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.2),dl=li(d,.4);
+    let s=`<defs>
+      <linearGradient id="gDs${id}" x1="0" y1="-1" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(22)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </linearGradient>
+      <radialGradient id="gDsC${id}" cx="0" cy="0" r="11" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${dl}"/><stop offset="100%" stop-color="${dk(d,.2)}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<14;i++){const a=(i/14)*Math.PI*2;const px=Math.cos(a)*21,py=Math.sin(a)*21;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="4" ry="11" fill="url(#gDs${id})" stroke="${cd}" stroke-width=".4" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="10" fill="url(#gDsC${id})" stroke="${dk(d,.25)}" stroke-width=".8"/>`;
+    [[0,0],[4,0],[-4,0],[0,4],[0,-4],[3,3],[-3,3],[3,-3],[-3,-3],[6,1],[-6,1],[1,6],[-1,6],[6,-1],[-6,-1]].forEach(([x,y])=>{if(x*x+y*y<=88)s+=`<circle cx="${x}" cy="${y}" r="1.3" fill="${dk(d,.45)}" opacity=".85"/>`;});
+    return s;
+  },
+  blackeyedsusan(c,d,id){
+    const cl=li(c,.45),cd=dk(c,.2);
+    let s=`<defs>
+      <linearGradient id="gBE${id}" x1="0" y1="-1" x2="0" y2="1" gradientUnits="userSpaceOnUse" gradientTransform="scale(22)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="70%" stop-color="${c}"/><stop offset="100%" stop-color="${dk(c,.3)}"/>
+      </linearGradient>
+    </defs>`;
+    for(let i=0;i<13;i++){const a=(i/13)*Math.PI*2;const px=Math.cos(a)*21,py=Math.sin(a)*21;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="4.5" ry="12" fill="url(#gBE${id})" stroke="${cd}" stroke-width=".4" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    // Dark dome center
+    s+=`<ellipse rx="10" ry="11" fill="${d}" stroke="${dk(d,.4)}" stroke-width="1"/>`;
+    for(let i=0;i<28;i++){const a=(i/28)*Math.PI*2,r=3.5+(i%3)*2.2;s+=`<circle cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" r="1.1" fill="${dk(d,.5)}" opacity=".7"/>`;} 
+    return s;
+  },
+  beeball(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.2);
+    let s=`<defs>
+      <radialGradient id="gBb${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<14;i++){const a=(i/14)*Math.PI*2;const px=Math.cos(a)*21,py=Math.sin(a)*21;s+=`<path d="M${(Math.cos(a)*4).toFixed(1)},${(Math.sin(a)*4).toFixed(1)} L${px.toFixed(1)},${py.toFixed(1)}" stroke="url(#gBb${id})" stroke-width="5" stroke-linecap="round"/>`;}
+    s+=`<circle r="7" fill="${d}" stroke="${dk(d,.3)}" stroke-width="1"/>`;
+    for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2,r=3.5;s+=`<circle cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" r="1.2" fill="${dk(d,.4)}"/>`;} 
+    return s;
+  },
+  anemone(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.2);
+    let s=`<defs>
+      <radialGradient id="gAn${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<6;i++){const a=(i/6)*Math.PI*2;const px=Math.cos(a)*21,py=Math.sin(a)*21;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="9" ry="15" fill="url(#gAn${id})" stroke="${cd}" stroke-width=".5" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="10.5" fill="${d}" stroke="${dk(d,.5)}" stroke-width="1"/>`;
+    for(let i=0;i<20;i++){const a=(i/20)*Math.PI*2,r=5+(i%2)*2.5;s+=`<circle cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r).toFixed(1)}" r="1.4" fill="${li(d,.6)}" opacity=".9"/>`;} 
+    s+=`<circle r="3" fill="${dk(d,.2)}"/>`;
+    return s;
+  },
+  chrysanthemum(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.2);
+    let s=`<defs>
+      <radialGradient id="gCh${id}" cx="0" cy="0" r="30" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [0,1,2,3].forEach(ring=>{const n=10+ring*4,r=7+ring*7.5,ry=4+ring*1.2,o=ring*Math.PI/(10+ring*4);for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="2.2" ry="${ry}" fill="url(#gCh${id})" stroke="${cd}" stroke-width=".3" opacity="${.78+ring*.05}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}});
+    s+=`<circle r="5.5" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  cornflower(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gCf${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<12;i++){const a=(i/12)*Math.PI*2;const px=Math.cos(a)*23,py=Math.sin(a)*23;s+=`<path d="M${(Math.cos(a)*5).toFixed(1)},${(Math.sin(a)*5).toFixed(1)} Q${(px+Math.cos(a+.42)*5).toFixed(1)},${(py+Math.sin(a+.42)*5).toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)} Q${(px+Math.cos(a-.42)*5).toFixed(1)},${(py+Math.sin(a-.42)*5).toFixed(1)} ${(Math.cos(a)*5).toFixed(1)},${(Math.sin(a)*5).toFixed(1)}Z" fill="url(#gCf${id})" stroke="${cd}" stroke-width=".4"/>`;}
+    for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;const px=Math.cos(a)*11,py=Math.sin(a)*11;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="4.5" ry="8.5" fill="${c}" opacity=".9" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="6" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  cosmos(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.2),dl=li(d,.4);
+    let s=`<defs>
+      <radialGradient id="gCo${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+      <radialGradient id="gCoC${id}" cx="0" cy="0" r="9" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${dl}"/><stop offset="100%" stop-color="${dk(d,.2)}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2;const px=Math.cos(a)*20,py=Math.sin(a)*20;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="7.5" ry="13" fill="url(#gCo${id})" stroke="${cd}" stroke-width=".5" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    s+=`<circle r="8" fill="url(#gCoC${id})" stroke="${dk(d,.2)}" stroke-width=".8"/>`;
+    [[0,0],[3,0],[-3,0],[0,3],[0,-3],[2.2,2.2],[-2.2,2.2],[2.2,-2.2],[-2.2,-2.2],[4,2],[-4,2]].forEach(([x,y])=>{s+=`<circle cx="${x}" cy="${y}" r="1.1" fill="${dk(d,.4)}" opacity=".8"/>`;});
+    return s;
+  },
+  snapdragon(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.25);
+    return `<defs>
+      <radialGradient id="gSn${id}" cx="0" cy="0" r="20" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <path d="M0,-26 C11,-26 17,-16 17,-5 C17,8 11,19 0,23 C-11,19 -17,8 -17,-5 C-17,-16 -11,-26 0,-26Z" fill="${c}" opacity=".45" stroke="${cd}" stroke-width=".5"/>
+    <ellipse cy="-5" rx="15" ry="17" fill="url(#gSn${id})" stroke="${cd}" stroke-width=".5"/>
+    <path d="M-14,-1 C-11,-10 11,-10 14,-1" stroke="${cd}" stroke-width="1.8" fill="none"/>
+    <ellipse cy="10" rx="9" ry="11" fill="${d}" opacity=".88" stroke="${dk(d,.2)}" stroke-width=".5"/>
+    <path d="M-8,6 C-5,2 5,2 8,6 C5,10 -5,10 -8,6Z" fill="${cl}" opacity=".85"/>
+    <circle cy="-5" r="5.5" fill="${li(d,.3)}" opacity=".6"/>`;
+  },
+  foxglove(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.25),ds=li(d,.5);
+    let s=`<defs>
+      <radialGradient id="gFx${id}" cx="-1" cy="0" r="2" gradientUnits="userSpaceOnUse" gradientTransform="scale(13)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="${li(d,.2)}" stroke-width="2.5" stroke-linecap="round"/>`;
+    [[-17,-23,-12],[-17,-7,-6],[-17,9,0]].forEach(([x,y,angle])=>{
+      s+=`<ellipse cx="${x}" cy="${y}" rx="13" ry="9.5" fill="url(#gFx${id})" stroke="${cd}" stroke-width=".5" transform="rotate(${angle},${x},${y})"/>`;
+      s+=`<ellipse cx="${x*.5}" cy="${y}" rx="7" ry="5.5" fill="${ds}" opacity=".55" transform="rotate(${angle},${x*.5},${y})"/>`;
+      s+=`<circle cx="${x-2}" cy="${y-1}" r="1.8" fill="${d}" opacity=".8"/>`;
+      s+=`<circle cx="${x+2}" cy="${y+1.5}" r="1.2" fill="${d}" opacity=".6"/>`;
+      s+=`<circle cx="${x-1}" cy="${y+2}" r="1" fill="${d}" opacity=".5"/>`;
+    });
+    return s;
+  },
+  craspedia(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.2);
+    let s=`<defs>
+      <radialGradient id="gCr${id}" cx="-5" cy="-5" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <circle r="23" fill="url(#gCr${id})" stroke="${cd}" stroke-width=".8"/>`;
+    [[0,0],[8,0],[-8,0],[0,8],[0,-8],[6,6],[-6,6],[6,-6],[-6,-6],[14,0],[-14,0],[0,14],[0,-14],[11,8],[-11,8],[11,-8],[-11,-8],[8,11],[-8,11],[8,-11],[-8,-11],[17,4],[-17,4],[4,17],[-4,17],[17,-4],[-17,-4],[4,-17],[-4,-17],[19,0],[-19,0],[0,19],[0,-19],[16,10],[-16,10],[10,16],[-10,16]].forEach(([x,y])=>{
+      if(x*x+y*y<=528)s+=`<circle cx="${x}" cy="${y}" r="3" fill="${d}" opacity=".5"/>`;
+    });
+    s+=`<circle r="5" fill="${d}" opacity=".65"/>`;
+    return s;
+  },
+  celosia(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.3);
+    return `<defs>
+      <radialGradient id="gCe${id}" cx="0" cy="-10" r="30" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <path d="M-24,8 C-22,-9 -14,-22 -8,-24 C-2,-26 0,-17 0,-11 C0,-17 2,-26 8,-24 C14,-22 22,-9 24,8 C20,20 10,26 0,28 C-10,26 -20,20 -24,8Z" fill="url(#gCe${id})" stroke="${cd}" stroke-width=".7"/>
+    <path d="M-16,-4 C-14,-14 -10,-20 -6,-20 C-2,-20 0,-13 0,-9 C0,-13 2,-20 6,-20 C10,-20 14,-14 16,-4" stroke="${dk(c,.15)}" stroke-width="2.5" fill="none" opacity=".6"/>
+    <path d="M-20,4 C-17,-5 -12,-12 -5,-12 C0,-12 0,-7 0,-5 C0,-7 0,-12 5,-12 C12,-12 17,-5 20,4" stroke="${dk(c,.1)}" stroke-width="2" fill="none" opacity=".5"/>
+    <path d="M-22,8 C-14,4 -7,7 0,9 C7,7 14,4 22,8" stroke="${dk(c,.08)}" stroke-width="1.8" fill="none" opacity=".45"/>`;
+  },
+  calla(c,d,id){
+    const cl=li(c,.6),cd=dk(c,.15);
+    return `<defs>
+      <linearGradient id="gCa${id}" x1="-1" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="scale(18)">
+        <stop offset="0%" stop-color="${cd}"/><stop offset="40%" stop-color="${cl}"/><stop offset="100%" stop-color="${dk(c,.1)}"/>
+      </linearGradient>
+    </defs>
+    <path d="M2,-30 C19,-19 26,-3 21,12 C18,22 10,29 0,30 C-2,14 -5,2 -7,-12 C-9,-23 -6,-30 2,-30Z" fill="url(#gCa${id})" stroke="${dk(c,.2)}" stroke-width=".6"/>
+    <path d="M-3,-24 C-1,-16 0,-6 -1,9 C-2,19 -4,26 0,30 C-8,24 -13,12 -13,0 C-13,-13 -10,-24 -3,-24Z" fill="${cl}" opacity=".3"/>
+    <ellipse cx="5" cy="-1" rx="2.8" ry="15" fill="${d}" stroke="${dk(d,.3)}" stroke-width=".6" opacity=".88"/>
+    <ellipse cx="5" cy="-1" rx="1.2" ry="6" fill="${li(d,.5)}" opacity=".7"/>`;
+  },
+  zinnia(c,d,id){
+    const cl=li(c,.5),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gZi${id}" cx="0" cy="0" r="30" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[5,27,7.5,15,.63,0],[8,21,6.5,11.5,.73,22.5],[8,14,6,9.5,.83,11.25],[8,8,5.5,7.5,.91,0]].forEach(([n,r,rx,ry,op,off])=>{
+      const o=off*Math.PI/180;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<rect x="${(px-rx/2).toFixed(1)}" y="${(py-ry/2).toFixed(1)}" width="${rx}" height="${ry}" rx="2.5" fill="url(#gZi${id})" stroke="${cd}" stroke-width=".4" opacity="${op}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    });
+    s+=`<circle r="5.5" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  marigold(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.28);
+    let s=`<defs>
+      <radialGradient id="gMa${id}" cx="0" cy="0" r="30" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="55%" stop-color="${c}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[7,26,6.5,14,.63,0],[7,20,6,11.5,.73,25.7],[8,15,5.5,9.5,.81,0],[8,10,5,8,.88,22.5],[7,5,4.5,6.5,.95,0]].forEach(([n,r,rx,ry,op,off])=>{
+      const o=off*Math.PI/180;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${rx}" ry="${ry}" fill="url(#gMa${id})" stroke="${cd}" stroke-width=".4" opacity="${op}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    });
+    s+=`<circle r="4.5" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  petunia(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gPu${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;const px=Math.cos(a)*19,py=Math.sin(a)*19;s+=`<path d="M${(Math.cos(a)*5).toFixed(1)},${(Math.sin(a)*5).toFixed(1)} C${(px+Math.cos(a+.5)*8).toFixed(1)},${(py+Math.sin(a+.5)*8).toFixed(1)} ${(px+Math.cos(a+.2)*5).toFixed(1)},${(py+Math.sin(a+.2)*5).toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)} C${(px+Math.cos(a-.2)*5).toFixed(1)},${(py+Math.sin(a-.2)*5).toFixed(1)} ${(px+Math.cos(a-.5)*8).toFixed(1)},${(py+Math.sin(a-.5)*8).toFixed(1)} ${(Math.cos(a)*5).toFixed(1)},${(Math.sin(a)*5).toFixed(1)}Z" fill="url(#gPu${id})" stroke="${cd}" stroke-width=".5"/>`;
+      // vein line
+      s+=`<line x1="${(Math.cos(a)*6).toFixed(1)}" y1="${(Math.sin(a)*6).toFixed(1)}" x2="${(Math.cos(a)*17).toFixed(1)}" y2="${(Math.sin(a)*17).toFixed(1)}" stroke="${cl}" stroke-width="1.2" opacity=".6"/>`;
+    }
+    s+=`<circle r="6" fill="${li(d,.4)}" stroke="${d}" stroke-width="1"/><circle r="3" fill="${d}"/>`;
+    return s;
+  },
+  forgetmenot(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.15);
+    let s=`<defs>
+      <radialGradient id="gFm${id}" cx="0" cy="0" r="28" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[0,-13],[11,-6],[-11,-6],[7,8],[-7,8],[0,20],[15,6],[-15,6],[0,0]].slice(0,8).forEach(([px,py])=>{
+      for(let i=0;i<5;i++){const a=(i/5)*Math.PI*2;const ex=px+Math.cos(a)*5.5,ey=py+Math.sin(a)*5.5;s+=`<ellipse cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" rx="3.8" ry="5.5" fill="url(#gFm${id})" stroke="${cd}" stroke-width=".3" transform="rotate(${(a*180/Math.PI).toFixed(0)},${ex.toFixed(1)},${ey.toFixed(1)})"/>`;}
+      s+=`<circle cx="${px}" cy="${py}" r="2.5" fill="${li(d,.5)}" stroke="${d}" stroke-width=".6"/>`;
+    });
+    return s;
+  },
+  gladiolus(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gGl${id}" cx="-1" cy="0" r="2" gradientUnits="userSpaceOnUse" gradientTransform="scale(14)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="${li(d,.2)}" stroke-width="2.5" stroke-linecap="round"/>`;
+    [[-18,-24],[-18,-9],[-18,6]].forEach(([x,y])=>{
+      s+=`<path d="M${x},${y} C${x-7},${y-9} ${x+9},${y-11} ${x+15},${y} C${x+9},${y+7} ${x-5},${y+9} ${x},${y}Z" fill="url(#gGl${id})" stroke="${cd}" stroke-width=".5"/>`;
+      s+=`<ellipse cx="${x-4}" cy="${y}" rx="4.5" ry="6.5" fill="${li(d,.4)}" opacity=".5"/>`;
+    });
+    return s;
+  },
+  ranunculus(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.3);
+    let s=`<defs>
+      <radialGradient id="gRa${id}" cx="0" cy="0" r="32" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="50%" stop-color="${c}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>`;
+    [[5,29,8.5,15,.58,0],[6,23,8,12.5,.67,30],[7,18,7.5,11,.75,0],[8,13,7,9.5,.82,22.5],[8,8,6.5,8,.88,0],[7,4,5.5,6.5,.94,25.7]].forEach(([n,r,rx,ry,op,off])=>{
+      const o=off*Math.PI/180;
+      for(let i=0;i<n;i++){const a=(i/n)*Math.PI*2+o;const px=Math.cos(a)*r,py=Math.sin(a)*r;s+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${rx}" ry="${ry}" fill="url(#gRa${id})" stroke="${cd}" stroke-width=".35" opacity="${op}" transform="rotate(${(a*180/Math.PI).toFixed(0)},${px.toFixed(1)},${py.toFixed(1)})"/>`;}
+    });
+    s+=`<circle r="4" fill="${li(d,.3)}" stroke="${d}" stroke-width=".8"/>`;
+    return s;
+  },
+  bells(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.25);
+    let s=`<defs>
+      <radialGradient id="gBl${id}" cx="-1" cy="0" r="2" gradientUnits="userSpaceOnUse" gradientTransform="scale(14)">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="#3A6A2A" stroke-width="2.5" stroke-linecap="round"/>`;
+    [[-13,-22],[-13,-7],[-13,8],[11,-26],[11,-11],[11,4]].forEach(([x,y])=>{
+      s+=`<path d="M${x},${y-8} C${x-11},${y-8} ${x-13},${y} ${x-11},${y+9} C${x-7},${y+15} ${x},${y+13} ${x},${y+9} C${x},${y+13} ${x+7},${y+15} ${x+11},${y+9} C${x+13},${y} ${x+11},${y-8} ${x},${y-8}Z" fill="url(#gBl${id})" stroke="${cd}" stroke-width=".5"/>`;
+      s+=`<ellipse cx="${x}" cy="${y+5}" rx="4.5" ry="5.5" fill="${li(d,.5)}" opacity=".8"/>`;
+    });
+    return s;
+  },
+  spike(c,d,id){
+    const cl=li(c,.55),cd=dk(c,.2),sg=li(d,.3);
+    let s=`<defs>
+      <radialGradient id="gSp${id}" cx="0" cy="0" r="10" gradientUnits="userSpaceOnUse">
+        <stop offset="0%" stop-color="${cl}"/><stop offset="100%" stop-color="${cd}"/>
+      </radialGradient>
+    </defs>
+    <line x1="0" y1="-30" x2="0" y2="30" stroke="${sg}" stroke-width="2.5" stroke-linecap="round"/>`;
+    for(let i=0;i<11;i++){const y=-25+i*5;const side=i%2===0?-9:9;s+=`<path d="M${(side*.3).toFixed(0)},${y} C${side*.9},${y-4} ${side},${y-1.5} ${side},${y+2.5} C${side},${y+5} ${(side*.9).toFixed(0)},${y+6} ${(side*.3).toFixed(0)},${y+5} Z" fill="url(#gSp${id})"/>`;} 
+    return s;
+  }
+};
+
+function getFlowerSVG(f,id){
+  const type=FTYPE[f.name]||'daisy';
+  const fn=D[type]||D.daisy;
+  return fn(f.color,f.center,id||f.name.replace(/[\s\-]/g,''));
+}
+
+// ── State ──
+const selected={};let arrangement=[];let currentTab='all';const MAX=20;
+function totalStems(){return Object.values(selected).reduce((a,b)=>a+b,0);}
+
+function setTab(tab,el){
+  currentTab=tab;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');renderGrid();
+}
+
+function renderGrid(){
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  let flowers=FLOWERS;
+  if(currentTab!=='all'&&currentTab!=='selected')flowers=flowers.filter(f=>f.cat===currentTab);
+  if(currentTab==='selected')flowers=flowers.filter(f=>selected[f.name]);
+  if(q)flowers=flowers.filter(f=>f.name.toLowerCase().includes(q));
+  const total=totalStems(),grid=document.getElementById('flowerGrid');
+  if(!flowers.length){grid.innerHTML='<div class="empty-grid">No flowers found.</div>';return;}
+  grid.innerHTML=flowers.map((f,idx)=>{
+    const cnt=selected[f.name]||0,isSel=cnt>0,isFull=total>=MAX&&!isSel;
+    const dur=(3.5+idx%5*.4).toFixed(1),del=(idx%7*.45).toFixed(1);
+    const fid=f.name.replace(/[\s\-]/g,'')+idx;
+    return `<div class="flower-card${isSel?' selected':''}${isFull?' disabled':''}" onclick="toggle('${f.name}')">
+      ${cnt>0?`<div class="count-badge">${cnt}</div>`:''}
+      <div class="flower-svg-wrap">
+        <svg viewBox="-38 -38 76 76" width="90" height="90" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+          <g class="f-anim" style="--dur:${dur}s;--del:-${del}s">${getFlowerSVG(f,fid)}</g>
+        </svg>
+      </div>
+      <div class="flower-name">${f.name}</div>
+      <span class="cat-badge cat-${f.cat}">${f.cat}</span>
+    </div>`;
+  }).join('');
+}
+
+function toggle(name){
+  const total=totalStems();
+  if(!selected[name]){if(total>=MAX){showToast('Bouquet full! Remove a stem to add more.');return;}selected[name]=0;}
+  selected[name]++;
+  if(selected[name]>6)selected[name]=0;
+  if(selected[name]===0)delete selected[name];
+  buildArrangement();renderGrid();renderProgress();renderBouquet();
+}
+
+function buildArrangement(){
+  arrangement=[];
+  Object.entries(selected).forEach(([name,cnt])=>{const f=FLOWERS.find(x=>x.name===name);if(f)for(let i=0;i<cnt;i++)arrangement.push(f);});
+}
+
+function renderProgress(){
+  const total=totalStems();
+  document.getElementById('stemNum').textContent=total;
+  document.getElementById('progressFill').style.width=(total/MAX*100)+'%';
+}
+
+// ── Bouquet display ──
+function renderBouquet(){
+  const svgEl=document.getElementById('bouquetSvg');
+  const n=arrangement.length;
+  document.getElementById('bouquetDesc').textContent=n===0?'Add flowers above to start building your bouquet.':n<4?'A beautiful start — keep adding more stems.':n<9?'Your arrangement is taking shape!':n<16?'A gorgeous bouquet is blossoming!':'✦ A stunning full bouquet!';
+  document.getElementById('stemList').innerHTML=Object.entries(selected).map(([name,cnt])=>{
+    const f=FLOWERS.find(x=>x.name===name);
+    return `<span class="stem-tag" style="border-left:3px solid ${f.color}">${name} ×${cnt}</span>`;
+  }).join('');
+  if(n===0){svgEl.innerHTML=emptyBouquetSVG();return;}
+
+  const bx=360,by=500;
+  const spread=Math.min(118,36+n*4.2);
+  const stemLen=n<=3?240:n<=7?225:n<=12?210:195;
+  // Flower scale — bigger flowers relative to stems
+  const fscale=n<=2?2.4:n<=4?2.1:n<=7?1.82:n<=11?1.55:n<=15?1.3:1.1;
+
+  let out=`<defs>
+    <filter id="dropShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="2" dy="4"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.18"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>`;
+
+  // Stems (behind flowers)
+  for(let i=0;i<n;i++){
+    const t=n===1?.5:i/(n-1);
+    const angle=(-spread/2+spread*t-90)*Math.PI/180;
+    const fx=bx+Math.cos(angle)*stemLen,fy=by+Math.sin(angle)*stemLen;
+    const cx1=bx+Math.cos(angle)*stemLen*.3,cy1=by+Math.sin(angle)*stemLen*.3+30;
+    out+=`<path d="M${bx},${by} Q${cx1.toFixed(1)},${cy1.toFixed(1)} ${fx.toFixed(1)},${fy.toFixed(1)}" fill="none" stroke="#4A6E3A" stroke-width="3" opacity=".7" stroke-linecap="round"/>`;
+    // Small leaf on some stems
+    if(i%3===1){
+      const lx=bx+Math.cos(angle)*stemLen*.55,ly=by+Math.sin(angle)*stemLen*.55+12;
+      const la=angle+1.2;
+      out+=`<ellipse cx="${(lx+Math.cos(la)*10).toFixed(1)}" cy="${(ly+Math.sin(la)*10).toFixed(1)}" rx="9" ry="4.5" fill="#5A8040" opacity=".7" transform="rotate(${(la*180/Math.PI).toFixed(0)},${(lx+Math.cos(la)*10).toFixed(1)},${(ly+Math.sin(la)*10).toFixed(1)})"/>`;
+    }
+  }
+
+  // Ribbon + bow
+  out+=`<g transform="translate(${bx},${by})">
+    <rect x="-14" y="-28" width="28" height="36" rx="4" fill="#E87098" opacity=".85"/>
+    <ellipse cx="-17" cy="-6" rx="15" ry="9" fill="#D45080" opacity=".92" transform="rotate(-30,-17,-6)"/>
+    <ellipse cx="17" cy="-6" rx="15" ry="9" fill="#D45080" opacity=".92" transform="rotate(30,17,-6)"/>
+    <circle r="9" fill="#C04060" stroke="#A02040" stroke-width=".8"/>
+    <line x1="0" y1="9" x2="-13" y2="38" stroke="#D45080" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+    <line x1="0" y1="9" x2="13" y2="38" stroke="#D45080" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+  </g>`;
+
+  // Flowers on top — BIG
+  for(let i=0;i<n;i++){
+    const t=n===1?.5:i/(n-1);
+    const angle=(-spread/2+spread*t-90)*Math.PI/180;
+    const fx=bx+Math.cos(angle)*stemLen,fy=by+Math.sin(angle)*stemLen;
+    const type=FTYPE[arrangement[i].name]||'daisy';
+    const fn=D[type]||D.daisy;
+    const fid='b'+arrangement[i].name.replace(/[\s\-]/g,'')+i;
+    out+=`<g transform="translate(${fx.toFixed(1)},${fy.toFixed(1)}) scale(${fscale})" filter="url(#dropShadow)">${fn(arrangement[i].color,arrangement[i].center,fid)}</g>`;
+  }
+  svgEl.innerHTML=out;
+}
+
+function emptyBouquetSVG(){
+  return `<g opacity=".22">
+    <path d="M360,490 Q360,370 360,270" stroke="#5A7B5A" stroke-width="3.5" fill="none" stroke-dasharray="8,6"/>
+    <circle cx="360" cy="258" r="30" fill="#F090B0"/><circle cx="360" cy="258" r="12" fill="#C04060"/>
+    <text x="360" y="540" text-anchor="middle" font-family="Lato,sans-serif" font-size="16" fill="#8A5766">Start adding flowers above ✦</text>
+  </g>`;
+}
+
+function shuffleBouquet(){
+  for(let i=arrangement.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arrangement[i],arrangement[j]]=[arrangement[j],arrangement[i]];}
+  renderBouquet();
+}
+function clearAll(){Object.keys(selected).forEach(k=>delete selected[k]);arrangement=[];renderGrid();renderProgress();renderBouquet();}
+function copyBouquet(){
+  const name=document.getElementById('bouquetName').value.trim()||'My Bouquet';
+  const stems=Object.entries(selected).map(([n,c])=>`${n} ×${c}`).join(', ');
+  if(navigator.clipboard)navigator.clipboard.writeText(`🌸 ${name}\n\n${stems}`);
+  showToast('Bouquet copied to clipboard!');
+  const btn=document.getElementById('copyBtn');btn.textContent='Copied! ✦';setTimeout(()=>btn.textContent='Copy bouquet ✦',1800);
+}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+renderGrid();renderProgress();renderBouquet();
+</script>
+</body>
+</html>
